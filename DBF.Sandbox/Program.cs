@@ -15,19 +15,21 @@ namespace DBF.SandBox
         {
             using (var context = new TestContext())
             {
-                //var user = new User
-                //{
-                //    Id = Guid.NewGuid(),
-                //    FirstName = "Yuré",
-                //    LastName = "Vanderbruggen",
-                //    UserName = "Yurevdb",
-                //    IsEnabled = true,
-                //    CreatedDateUTC = DateTimeOffset.UtcNow
-                //};
+                var user = new User
+                {
+                    Id = Guid.NewGuid(),
+                    FirstName = "Samantha",
+                    LastName = "Rone",
+                    UserName = "Cute Blonde",
+                    IsEnabled = true,
+                    CreatedDateUTC = DateTimeOffset.UtcNow
+                };
 
                 context.Users[0].UserName = "Ik ben veranderd";
 
-                await context.Commit();
+                context.Users.Add(user);
+
+                //await context.Commit();
             }
         }
     }

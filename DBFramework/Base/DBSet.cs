@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace DBF
 {
@@ -8,7 +9,7 @@ namespace DBF
     /// A collection of items corresponding to a database table
     /// </summary>
     /// <typeparam name="TModel">The model of the database table</typeparam>
-    public class DBSet<TModel> : IList<TModel>
+    public class DBSet<TModel> : IList<TModel>                                                                                                                  
         where TModel : class
     {
         #region Private Members
@@ -100,6 +101,28 @@ namespace DBF
         }
 
         /// <summary>
+        /// Indicates wether the <see cref="DBSet{TModel}"/> contains the given item based on the primary key obtained by providing a <see cref="DBSchema"/>
+        /// </summary>
+        /// <param name="item">The item of type <typeparamref name="TModel"/></param>
+        /// <param name="schema">The <see cref="DBSchema"/> holding the primary key</param>
+        /// <returns></returns>
+        public bool Contains(TModel item, DBSchema schema)
+        {
+            foreach (var i in _list)
+            {
+                var a = i.GetPrimaryKeyValue(schema);
+                var b = item.GetPrimaryKeyValue(schema);
+
+                if (a.Equals(b))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Copies an array of <typeparamref name="TModel"/>, starting and the provided index
         /// </summary>
         /// <param name="array">The array to inject</param>
@@ -147,11 +170,11 @@ namespace DBF
         public DBSet() { }
 
         /// <summary>
-        /// Parameterized constructor for internal use only
+        /// Parameterized constructor for internal use only (must be public for reflection to be able to create a new instance of this)
         /// Used to create a dereferenced set based on a DBSet to create a snapshot of the dbcontext
         /// </summary>
         /// <param name="set">The dbset to dereference</param>
-        internal DBSet(DBSet<TModel> set)
+        public DBSet(DBSet<TModel> set)
         {
             foreach (var item in set)
             {

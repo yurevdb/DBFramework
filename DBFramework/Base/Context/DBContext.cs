@@ -43,7 +43,7 @@ namespace DBF
         /// The schema for the <see cref="DBContext"/>.
         /// This holds any constraint data for the database
         /// </summary>
-        protected DBSchema Schema => _DBContextBuilder.Schema;
+        internal DBSchema Schema => _DBContextBuilder.Schema;
 
         #endregion
 
@@ -95,23 +95,23 @@ namespace DBF
                 // Check if any changes have happened
                 if (!ChangeTracker.Instance.DetectChanges(this)) return;
 
+                // Get all the changes
+                while(ChangeTracker.Instance.Changes.Count > 0)
+                {
+                    // Get the DBChange
+                    var change = ChangeTracker.Instance.Changes.Dequeue();
 
-            });
-        }
-
-        /// <summary>
-        /// <para>
-        ///     If any <see cref="DBSet{T}"/> belonging to this <see cref="DBContext"/> has any significant changes within the data. 
-        ///     This function will discard those changes to the database.
-        /// </para>
-        /// </summary>
-        /// <returns></returns>
-        internal async Task Discard()
-        {
-            await Task.Run(() =>
-            {
-                // Clear any changes tracked by the changetracker
-                ChangeTracker.Instance.Changes.Clear();
+                    switch (change.Action)
+                    {
+                        case DBAction.Push:
+                            break;
+                        case DBAction.Remove:
+                            break;
+                        case DBAction.Update:
+                            break;
+                        default: continue;
+                    }
+                }
             });
         }
 
@@ -195,13 +195,7 @@ namespace DBF
         /// <summary>
         /// Disposes the current <see cref="DBContext"/>
         /// </summary>
-        public void Dispose()
-        {
-            if (ChangeTracker.Instance.HasChanges)
-            {
-                _ = Discard();
-            }
-        }
+        public void Dispose() { }
 
         #endregion
     }
