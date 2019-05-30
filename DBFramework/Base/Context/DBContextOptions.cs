@@ -1,11 +1,22 @@
-﻿namespace DBF
+﻿using System;
+
+namespace DBF
 {
     /// <summary>
     /// Sets the options for the <see cref="DBContext"/>
     /// </summary>
     public class DBContextOptions
     {
-        #region Public Properties
+        #region Private Members
+
+        /// <summary>
+        /// The Connection string
+        /// </summary>
+        private readonly string _ConnectionString;
+
+        #endregion
+
+        #region Public Settings Properties
 
         /// <summary>
         /// Determines wether the <see cref="DBContext"/> should be synchronized at all times with the database.
@@ -37,6 +48,15 @@
 
         #endregion
 
+        #region Public Objects Properties
+
+        /// <summary>
+        /// 
+        /// </summary>
+        internal IDBActionProvider DBActionProvider { get; private set; }
+
+        #endregion
+
         #region Constructor
 
         /// <summary>
@@ -48,6 +68,33 @@
         /// </summary>
         public DBContextOptions()
         {
+        }
+
+        /// <summary>
+        /// Default constructor
+        /// <para>
+        ///     Initializes the <see cref="DBContextOptions"/> with the most used options set to the correst values.
+        ///     If the options have to be set differently per <see cref="DBContext"/>, the user has all the possibility to do so.
+        /// </para>
+        /// </summary>
+        public DBContextOptions(string ConnectionString)
+        {
+            _ConnectionString = ConnectionString;
+        }
+
+        #endregion
+
+        #region Public Functions
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TActionProvider"></typeparam>
+        /// <param name="actionProvider"></param>
+        public void Use<TActionProvider>() where TActionProvider : IDBActionProvider, new()
+        {
+            TActionProvider provider = (TActionProvider)Activator.CreateInstance(typeof(TActionProvider), _ConnectionString);
+            DBActionProvider = provider;
         }
 
         #endregion

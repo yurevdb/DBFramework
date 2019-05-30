@@ -1,36 +1,41 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace DBF.Sql
+namespace DBF
 {
     /// <summary>
-    /// A <see cref="DBContext"/> for connection to a sql database
+    /// 
     /// </summary>
-    public class SqlContext : DBContext
+    public class SqlDBActionProvider : IDBActionProvider
     {
+        #region Private Members
+
+        /// <summary>
+        /// The connectionstring to access the database 
+        /// </summary>
+        private readonly string _ConnectionString = null;
+
+        #endregion
+
         #region Constructor
 
         /// <summary>
-        /// Default Constructor for creating a Sql <see cref="DBContext"/>
+        /// Default Constructor
         /// </summary>
-        /// <param name="ConnectionString">The connection string to connect to a sql database</param>
-        public SqlContext(string ConnectionString) : base(ConnectionString)
-        {
-
-        }
+        public SqlDBActionProvider() { }
 
         /// <summary>
-        /// Parameterized Constructor for creating a Sql <see cref="DBContext"/> with options set to the users liking
+        /// Paramerized constructor
+        /// <paramref name="ConnectionString">The Connectionstring to access the database</paramref>
         /// </summary>
-        /// <param name="ConnectionString">The connection string to connect to a sql database</param>
-        /// <param name="Options"><see cref="Action"/> to set the <see cref="DBContextOptions"/></param>
-        public SqlContext(string ConnectionString, Action<DBContextOptions> Options) : base(ConnectionString, Options)
+        public SqlDBActionProvider(string ConnectionString)
         {
-
+            _ConnectionString = ConnectionString;
         }
 
         #endregion
@@ -43,7 +48,7 @@ namespace DBF.Sql
         /// <typeparam name="T">The type of data to get from the corresponding table in the <see cref="DBContext"/></typeparam>
         /// <param name="predicate">An <see cref="Action"/> to set the where clause for the select from the sql database</param>
         /// <returns></returns>
-        public override async Task<DBSet<T>> Fetch<T>(Action<T> predicate = null)
+        public async Task<DBSet<T>> Fetch<T>(Action<T> predicate = null) where T : new()
         {
             return await Task.Run(() =>
             {
@@ -131,12 +136,6 @@ namespace DBF.Sql
                     }
                 }
 
-                // Set the DBSet if availlable
-                if (Options.SynchronizeDB && predicate == null)
-                    foreach (var prop in GetType().GetProperties())
-                        if (prop.PropertyType == typeof(DBSet<T>) && prop.Name == table)
-                            prop.SetValue(this, retval);
-
                 // Return the requested data
                 return retval;
             });
@@ -148,29 +147,29 @@ namespace DBF.Sql
         /// <typeparam name="T">The model corresponding to the database table</typeparam>
         /// <param name="item">The item to push to the sql database</param>
         /// <returns></returns>
-        public override async Task Push<T>(T item)
+        public async Task Push<T>(T item)
         {
-            await Task.Run(() => 
+            await Task.Run(() =>
             {
                 // Get all the properties to insert into the database
                 List<(string, object)> dbvalues = new List<(string, object)>();
                 // TODO: Ignore the ignore properties
-                foreach(var prop in typeof(T).GetProperties())
+                foreach (var prop in typeof(T).GetProperties())
                     dbvalues.Add(((prop.CustomAttributes.Count() > 0) ? (prop.GetCustomAttributes(typeof(DBName), false).First() as DBName)?.Name : prop.Name, prop.GetValue(item)));
 
                 // TODO: add constraint checking here
                 // ------------------------------------------------------------
                 // If the options don't allow unsafe code and the where is null
                 // Throw an excpetion
-                if (!item.HasPrimaryKeyValue(Schema) && !Options.AllowUnsafe) throw new Exception("The DBContext does not allow unsafe code and the action that would be ran is considered unsafe\r\nAction: trying to delete without setting the where with primary key as unique identifier");
-                if (!item.RequiredValuesCorrect(Schema)) throw new Exception("Required values cannot be null");
+                //if (!item.HasPrimaryKeyValue(Schema) && !Options.AllowUnsafe) throw new Exception("The DBContext does not allow unsafe code and the action that would be ran is considered unsafe\r\nAction: trying to delete without setting the where with primary key as unique identifier");
+                //if (!item.RequiredValuesCorrect(Schema)) throw new Exception("Required values cannot be null");
 
                 // Generate the insert query
                 string table = (typeof(T).CustomAttributes.Count() > 0) ? (typeof(T).GetCustomAttributes(typeof(DBName), false).First() as DBName)?.Name : typeof(T).Name;
                 string columns = "";
                 string values = "";
                 int count = 0;
-                foreach(var val in dbvalues)
+                foreach (var val in dbvalues)
                 {
                     columns += $"{val.Item1}";
                     switch (val.Item2.GetType().ToString())
@@ -210,16 +209,16 @@ namespace DBF.Sql
                 }
 
                 // Synchronize the database
-                if (Options.SynchronizeDB)
-                {
-                    var method = GetType().GetMethod("Fetch");
-                    var genMethod = method.MakeGenericMethod(typeof(T));
-                    // Execute the generic fetch method for the specified type
-                    if (Options.AsyncSynchronization)
-                        Task.Run(() => genMethod.Invoke(this, new object[] { null }));
-                    else
-                        (genMethod.Invoke(this, new object[] { null }) as Task)?.Wait();
-                }
+                //if (Options.SynchronizeDB)
+                //{
+                //    var method = GetType().GetMethod("Fetch");
+                //    var genMethod = method.MakeGenericMethod(typeof(T));
+                //    // Execute the generic fetch method for the specified type
+                //    if (Options.AsyncSynchronization)
+                //        Task.Run(() => genMethod.Invoke(this, new object[] { null }));
+                //    else
+                //        (genMethod.Invoke(this, new object[] { null }) as Task)?.Wait();
+                //}
             });
         }
 
@@ -229,7 +228,7 @@ namespace DBF.Sql
         /// <typeparam name="T">The model of the item corresponding to the table from the sql database</typeparam>
         /// <param name="predicate">An <see cref="Action"/> to set the where clause for the removal of the item/items from the sql database</param>
         /// <returns></returns>
-        public override async Task Remove<T>(Action<T> predicate)
+        public async Task Remove<T>(Action<T> predicate) where T : new()
         {
             await Task.Run(() =>
             {
@@ -237,7 +236,7 @@ namespace DBF.Sql
                 T item = new T();
                 predicate(item);
 
-                bool HasPrimaryKey = false;
+                //bool HasPrimaryKey = false;
 
                 // Get the where state from the predicate if given
                 string where = null;
@@ -247,7 +246,7 @@ namespace DBF.Sql
 
                     var value = prop.GetValue(item);
 
-                    if(!HasPrimaryKey) HasPrimaryKey = prop.IsPrimaryKey(Schema, typeof(T));
+                    //if (!HasPrimaryKey) HasPrimaryKey = prop.IsPrimaryKey(Schema, typeof(T));
 
                     // If there is already a where clause
                     // Add a "AND"
@@ -274,7 +273,7 @@ namespace DBF.Sql
 
                 // If the options don't allow unsafe code and the where is null
                 // Throw an excpetion
-                if (!HasPrimaryKey && !Options.AllowUnsafe) throw new Exception("The DBContext does not allow unsafe code and the action that would be ran is considered unsafe\r\nAction: trying to delete without setting the where with primary key as unique identifier");
+                //if (!HasPrimaryKey && !Options.AllowUnsafe) throw new Exception("The DBContext does not allow unsafe code and the action that would be ran is considered unsafe\r\nAction: trying to delete without setting the where with primary key as unique identifier");
 
                 // Get the name of the database table
                 string table = (typeof(T).CustomAttributes.Count() > 0) ? (typeof(T).GetCustomAttributes(typeof(DBName), false).First() as DBName)?.Name : typeof(T).Name;
@@ -293,16 +292,16 @@ namespace DBF.Sql
                 }
 
                 // Synchronize the database
-                if (Options.SynchronizeDB)
-                {
-                    var method = GetType().GetMethod("Fetch");
-                    var genMethod = method.MakeGenericMethod(typeof(T));
-                    // Execute the generic fetch method for the specified type
-                    if (Options.AsyncSynchronization)
-                        Task.Run(() => genMethod.Invoke(this, new object[] { null }));
-                    else
-                        (genMethod.Invoke(this, new object[] { null }) as Task)?.Wait();
-                }
+                //if (Options.SynchronizeDB)
+                //{
+                //    var method = GetType().GetMethod("Fetch");
+                //    var genMethod = method.MakeGenericMethod(typeof(T));
+                //    // Execute the generic fetch method for the specified type
+                //    if (Options.AsyncSynchronization)
+                //        Task.Run(() => genMethod.Invoke(this, new object[] { null }));
+                //    else
+                //        (genMethod.Invoke(this, new object[] { null }) as Task)?.Wait();
+                //}
             });
         }
 
@@ -314,7 +313,7 @@ namespace DBF.Sql
         /// <param name="predicate">The <see cref="Action"/> defining the where clause for the update statement</param>
         /// <param name="update">The <see cref="Action"/> setting the new values for the item</param>
         /// <returns></returns>
-        public override async Task Update<T>(Action<T> predicate)
+        public async Task Update<T>(Action<T> predicate) where T : new()
         {
             await Task.Run(() =>
             {
@@ -326,11 +325,11 @@ namespace DBF.Sql
                 T item = new T();
                 predicate(item);
 
-                if (!item.HasPrimaryKeyValue(Schema)) throw new Exception("In order to update an item, the item must have a value for the primary key and the primary will be used in the where statement only.");
+                //if (!item.HasPrimaryKeyValue(Schema)) throw new Exception("In order to update an item, the item must have a value for the primary key and the primary will be used in the where statement only.");
 
                 foreach (var prop in item.GetType().GetProperties())
                 {
-                    if (prop.GetValue(item) == null || prop.IsPrimaryKey(Schema, typeof(T))) continue;
+                    if (prop.GetValue(item) == null) continue; // || prop.IsPrimaryKey(Schema, typeof(T))
 
                     var value = prop.GetValue(item);
 
@@ -361,7 +360,7 @@ namespace DBF.Sql
                 string where = null;
                 foreach (var prop in item.GetType().GetProperties())
                 {
-                    if (!prop.IsPrimaryKey(Schema, typeof(T))) continue;
+                    //if (!prop.IsPrimaryKey(Schema, typeof(T))) continue;
                     if (prop.GetValue(item) == null) continue;
 
                     var value = prop.GetValue(item);
@@ -407,16 +406,16 @@ namespace DBF.Sql
                 }
 
                 // Synchronize the database
-                if (Options.SynchronizeDB)
-                {
-                    var method = GetType().GetMethod("Fetch");
-                    var genMethod = method.MakeGenericMethod(typeof(T));
-                    // Execute the generic fetch method for the specified type
-                    if (Options.AsyncSynchronization)
-                        Task.Run(() => genMethod.Invoke(this, new object[] { null }));
-                    else
-                        (genMethod.Invoke(this, new object[] { null }) as Task)?.Wait();
-                }
+                //if (Options.SynchronizeDB)
+                //{
+                //    var method = GetType().GetMethod("Fetch");
+                //    var genMethod = method.MakeGenericMethod(typeof(T));
+                //    // Execute the generic fetch method for the specified type
+                //    if (Options.AsyncSynchronization)
+                //        Task.Run(() => genMethod.Invoke(this, new object[] { null }));
+                //    else
+                //        (genMethod.Invoke(this, new object[] { null }) as Task)?.Wait();
+                //}
             });
         }
 

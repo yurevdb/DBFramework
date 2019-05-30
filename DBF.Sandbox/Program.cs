@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using DBF.Sql;
 
 namespace DBF.SandBox
 {
@@ -15,28 +13,28 @@ namespace DBF.SandBox
 
         private static async void Tests()
         {
-            using (var context = new TestContext(options => options.AsyncSynchronization = false))
+            using (var context = new TestContext())
             {
                 var user = new User
                 {
                     Id = Guid.NewGuid(),
-                    FirstName = "Bob",
-                    LastName = "De Bouwer",
-                    UserName = "Bobby",
+                    FirstName = "Yuré",
+                    LastName = "Vanderbruggen",
+                    UserName = "Yurevdb",
                     IsEnabled = true,
                     CreatedDateUTC = DateTimeOffset.UtcNow
                 };
 
-                await context.Push(user);
+                //context.Users.Add(user);
 
-                var users = await context.Fetch<User>(u => u.UserName = "Yurevdb");
+                //await context.Commit();
             }
         }
     }
 
     #region Test Data
 
-    class TestContext : SqlContext
+    class TestContext : DBContext
     {
         #region Private Members
 
@@ -46,21 +44,19 @@ namespace DBF.SandBox
 
         #region Sets
 
+        /// <summary>
+        /// The set of users
+        /// </summary>
         public DBSet<User> Users { get; set; }
 
         #endregion
 
         #region Constructor
 
-        public TestContext() : base(connString)
-        {
-
-        }
-
-        public TestContext(Action<DBContextOptions> Options) : base(connString, Options)
-        {
-
-        }
+        /// <summary>
+        /// Default Constructor
+        /// </summary>
+        public TestContext() : base(connString) { }
 
         #endregion
 
@@ -68,6 +64,9 @@ namespace DBF.SandBox
 
         public override void OnContextCreating(DBContextBuilder contextBuilder)
         {
+            // Set the options
+            Options.Use<SqlDBActionProvider>();
+
             // Call base function
             base.OnContextCreating(contextBuilder);
 

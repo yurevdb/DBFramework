@@ -22,14 +22,14 @@ namespace DBF
         #region Private Members
 
         /// <summary>
-        /// The connection string for the <see cref="DBContext"/>
-        /// </summary>
-        internal string _ConnectionString = null;
-
-        /// <summary>
-        /// 
+        /// The context builder instance
         /// </summary>
         internal readonly DBContextBuilder _DBContextBuilder = new DBContextBuilder();
+
+        /// <summary>
+        /// The user set DBActionProvider
+        /// </summary>
+        internal IDBActionProvider DBActionProvider => Options.DBActionProvider;
 
         #endregion
 
@@ -67,41 +67,11 @@ namespace DBF
         /// <summary>
         /// Parameterized constructor
         /// </summary>
-        /// <param name="Options"><see cref="Action"/> to set the <see cref="DBContextOptions"/></param>
-        public DBContext(Action<DBContextOptions> Options)
-        {
-            // Assign the user given options
-            Options(this.Options);
-
-            // Create the context
-            OnContextCreating(_DBContextBuilder);
-        }
-
-        /// <summary>
-        /// Parameterized constructor
-        /// </summary>
         /// <param name="ConnectionString">The connectionstring for the <see cref="DBContext"/></param>
         public DBContext(string ConnectionString)
         {
-            // Set the connectionstring
-            _ConnectionString = ConnectionString;
-
-            // Create the context
-            OnContextCreating(_DBContextBuilder);
-        }
-
-        /// <summary>
-        /// Parameterized constructor
-        /// </summary>
-        /// <param name="ConnectionString">The connectionstring for the <see cref="DBContext"/></param>
-        /// <param name="Options"><see cref="Action"/> to set the <see cref="DBContextOptions"/></param>
-        public DBContext(string ConnectionString, Action<DBContextOptions> Options)
-        {
-            // Set the connectionstring
-            _ConnectionString = ConnectionString;
-
-            // Assign the user given options
-            Options(this.Options);
+            // Set the DBContextOptions
+            Options = new DBContextOptions(ConnectionString);
 
             // Create the context
             OnContextCreating(_DBContextBuilder);
@@ -118,7 +88,7 @@ namespace DBF
         /// </para>
         /// </summary>
         /// <returns></returns>
-        internal async Task Commit()
+        public async Task Commit()
         {
             await Task.Run(() =>
             {
@@ -140,56 +110,6 @@ namespace DBF
 
             });
         }
-
-        #endregion
-
-        #region Private Helpers
-
-        private void DBSetHasChanged(DBSetChangedEventArgs e)
-        {
-
-        }
-
-        #endregion
-
-        #region Database interaction
-
-        /// <summary>
-        /// Used to get the values from the database as a <see cref="List{T}"/>
-        /// </summary>
-        /// <typeparam name="T">The model for the corresponding database table</typeparam>
-        /// <param name="predicate">Used to set the where clause for fetching items from the database</param>
-        /// <returns><see cref="List{T}"/> of items of <typeparamref name="T"/></returns>
-        public abstract Task<DBSet<T>> Fetch<T>(Action<T> predicate) where T : new();
-
-        /// <summary>
-        /// Adds the given item to the database
-        /// </summary>
-        /// <typeparam name="T">The model corresponding to the database table</typeparam>
-        /// <param name="item">The item to push to the database</param>
-        /// <returns></returns>
-        public abstract Task Push<T>(T item);
-
-        /// <summary>
-        /// Removes item/items from the database based on an <see cref="Action"/> that defines the where clause for the item/items to remove
-        /// </summary>
-        /// <typeparam name="T">The model of the table for wich to remove an item</typeparam>
-        /// <param name="predicate">An <see cref="Action"/> that defines the where clause to remove an item/items from the database</param>
-        /// <returns></returns>
-        public abstract Task Remove<T>(Action<T> predicate) where T : new();
-
-        /// <summary>
-        /// Update an item in the database based on the predicate with the new values coming from the update <see cref="Action"/>
-        /// <para>
-        ///     TODO: update the update statement to require a primary key and use that to identify the item to update
-        ///           and then also use 1 predicate that has at least 2 values (1 primary key and 1 value to update)
-        /// </para>
-        /// </summary>
-        /// <typeparam name="T">The model corresponding to the database table to update</typeparam>
-        /// <param name="predicate">The <see cref="Action"/> defining the where clause for the update</param>
-        /// <param name="update">The new value for the model to update on the database</param>
-        /// <returns></returns>
-        public abstract Task Update<T>(Action<T> predicate) where T : new();
 
         #endregion
 
@@ -215,16 +135,25 @@ namespace DBF
                 if (!(prop.PropertyType == typeof(DBSet<>).MakeGenericType(genericType))) continue;
 
                 // Get the fetch method
-                var method = GetType().GetMethod("Fetch");
+                var method = DBActionProvider.GetType().GetMethod(nameof(DBActionProvider.Fetch));
 
                 // Generate the fetch method with the generic type we got earlier
                 var genMethod = method.MakeGenericMethod(genericType);
 
                 // Execute the generic fetch method for the specified type
                 if (Options.AsyncSynchronization)
-                    Task.Run(() => genMethod.Invoke(this, new object[] { null }));
+                    Task.Run(() =>
+                    {
+                        var p = typeof(Task<>).MakeGenericType(typeof(DBSet<>).MakeGenericType(prop.PropertyType.GetGenericArguments().First()));
+                        var t = Convert.ChangeType(genMethod.Invoke(DBActionProvider, new object[] { null }), p);
+                        prop.SetValue(this, t.GetType().GetProperty("Result")?.GetValue(t));
+                    });
                 else
-                    (genMethod.Invoke(this, new object[] { null }) as Task)?.Wait();
+                {
+                    var p = typeof(Task<>).MakeGenericType(typeof(DBSet<>).MakeGenericType(prop.PropertyType.GetGenericArguments().First()));
+                    var t = Convert.ChangeType(genMethod.Invoke(DBActionProvider, new object[] { null }), p);
+                    prop.SetValue(this, t.GetType().GetProperty("Result")?.GetValue(t));
+                }
             }
 
             // Set the DBTables in the contextbuilder based on the DBSets set in the user created context
@@ -247,7 +176,8 @@ namespace DBF
         /// </summary>
         public void Dispose()
         {
-            
+            if(HasChanges)
+                Discard().Wait();
         }
 
         #endregion
