@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -46,11 +45,6 @@ namespace DBF
         /// </summary>
         protected DBSchema Schema => _DBContextBuilder.Schema;
 
-        /// <summary>
-        /// Determines wether the <see cref="DBSet{T}"/> of this <see cref="DBContext"/> has any changes made to it since the last commit to the database
-        /// </summary>
-        internal bool HasChanges { get; set; } = false;
-
         #endregion
 
         #region Constructor
@@ -62,6 +56,9 @@ namespace DBF
         {
             // Create the context
             OnContextCreating(_DBContextBuilder);
+
+            // Take a snapshot of the context
+            ChangeTracker.Instance.TakeSnapShot(this);
         }
 
         /// <summary>
@@ -75,6 +72,9 @@ namespace DBF
 
             // Create the context
             OnContextCreating(_DBContextBuilder);
+
+            // Take a snapshot of the context
+            ChangeTracker.Instance.TakeSnapShot(this);
         }
 
         #endregion
@@ -92,6 +92,9 @@ namespace DBF
         {
             await Task.Run(() =>
             {
+                // Check if any changes have happened
+                if (!ChangeTracker.Instance.DetectChanges(this)) return;
+
 
             });
         }
@@ -107,7 +110,8 @@ namespace DBF
         {
             await Task.Run(() =>
             {
-
+                // Clear any changes tracked by the changetracker
+                ChangeTracker.Instance.Changes.Clear();
             });
         }
 
@@ -121,40 +125,13 @@ namespace DBF
         /// <param name="contextBuilder">The <see cref="DBContextBuilder"/> instance to use to set constraints etc.</param>
         public virtual void OnContextCreating(DBContextBuilder contextBuilder)
         {
-            // Fetch all the data from the database
-            foreach(var prop in GetType().GetProperties())
+            // Get the database data
+            if (Options.AsyncSynchronization)
             {
-                // Check to see if the property type has any generic arguments
-                // The dbsets always need a generic argument and that's what we're trying to get
-                if (prop.PropertyType.GetGenericArguments().Length < 1) continue;
-
-                // Get the generic type (always should be just 1)
-                Type genericType = prop.PropertyType.GetGenericArguments().First();
-
-                // Check to see if the property was of type DBSet<genericType>
-                if (!(prop.PropertyType == typeof(DBSet<>).MakeGenericType(genericType))) continue;
-
-                // Get the fetch method
-                var method = DBActionProvider.GetType().GetMethod(nameof(DBActionProvider.Fetch));
-
-                // Generate the fetch method with the generic type we got earlier
-                var genMethod = method.MakeGenericMethod(genericType);
-
-                // Execute the generic fetch method for the specified type
-                if (Options.AsyncSynchronization)
-                    Task.Run(() =>
-                    {
-                        var p = typeof(Task<>).MakeGenericType(typeof(DBSet<>).MakeGenericType(prop.PropertyType.GetGenericArguments().First()));
-                        var t = Convert.ChangeType(genMethod.Invoke(DBActionProvider, new object[] { null }), p);
-                        prop.SetValue(this, t.GetType().GetProperty("Result")?.GetValue(t));
-                    });
-                else
-                {
-                    var p = typeof(Task<>).MakeGenericType(typeof(DBSet<>).MakeGenericType(prop.PropertyType.GetGenericArguments().First()));
-                    var t = Convert.ChangeType(genMethod.Invoke(DBActionProvider, new object[] { null }), p);
-                    prop.SetValue(this, t.GetType().GetProperty("Result")?.GetValue(t));
-                }
+                _ = GetDatabaseData();
             }
+            else
+                GetDatabaseData().Wait();
 
             // Set the DBTables in the contextbuilder based on the DBSets set in the user created context
             foreach (var prop in GetType().GetProperties())
@@ -169,6 +146,50 @@ namespace DBF
 
         #endregion
 
+        #region Private Helpers
+
+        /// <summary>
+        /// Gets the database data
+        /// </summary>
+        /// <returns></returns>
+        private async Task GetDatabaseData()
+        {
+            await Task.Run(() =>
+            {
+                // Iterate over every property in the DBContext
+                foreach (var prop in GetType().GetProperties())
+                {
+                    // Check to see if the property type has any generic arguments
+                    // The dbsets always need a generic argument and that's what we're trying to get
+                    if (prop.PropertyType.GetGenericArguments().Length < 1) continue;
+
+                    // Get the generic type (always should be just 1)
+                    Type genericType = prop.PropertyType.GetGenericArguments().First();
+
+                    // Check to see if the property was of type DBSet<genericType>
+                    if (!(prop.PropertyType == typeof(DBSet<>).MakeGenericType(genericType))) continue;
+
+                    // Get the fetch method
+                    var method = DBActionProvider.GetType().GetMethod(nameof(DBActionProvider.Fetch));
+
+                    // Generate the fetch method with the generic type we got earlier
+                    var genMethod = method.MakeGenericMethod(genericType);
+
+                    // Execute the generic fetch method for the specified type
+                    var p = typeof(Task<>).MakeGenericType(typeof(DBSet<>).MakeGenericType(prop.PropertyType.GetGenericArguments().First()));
+                    var t = Convert.ChangeType(genMethod.Invoke(DBActionProvider, new object[] { null }), p);
+
+                    // Get the database values
+                    var value = t.GetType().GetProperty("Result")?.GetValue(t);
+
+                    // Set the remote values to the ordinary list of the dbset
+                    prop.SetValue(this, value);
+                }
+            });
+        }
+
+        #endregion
+
         #region Implementations
 
         /// <summary>
@@ -176,8 +197,10 @@ namespace DBF
         /// </summary>
         public void Dispose()
         {
-            if(HasChanges)
-                Discard().Wait();
+            if (ChangeTracker.Instance.HasChanges)
+            {
+                _ = Discard();
+            }
         }
 
         #endregion

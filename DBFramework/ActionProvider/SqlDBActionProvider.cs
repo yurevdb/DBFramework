@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace DBF
@@ -48,7 +47,7 @@ namespace DBF
         /// <typeparam name="T">The type of data to get from the corresponding table in the <see cref="DBContext"/></typeparam>
         /// <param name="predicate">An <see cref="Action"/> to set the where clause for the select from the sql database</param>
         /// <returns></returns>
-        public async Task<DBSet<T>> Fetch<T>(Action<T> predicate = null) where T : new()
+        public async Task<DBSet<T>> Fetch<T>(Action<T> predicate = null) where T : class, new()
         {
             return await Task.Run(() =>
             {
@@ -131,6 +130,8 @@ namespace DBF
                                     value = (value as string).Trim();
                                 prop.SetValue(item, value);
                             }
+
+                            // Add the item to the remote and local lists of the DBSet
                             retval.Add(item);
                         }
                     }
@@ -207,18 +208,6 @@ namespace DBF
                     connection.Open();
                     command.ExecuteNonQuery();
                 }
-
-                // Synchronize the database
-                //if (Options.SynchronizeDB)
-                //{
-                //    var method = GetType().GetMethod("Fetch");
-                //    var genMethod = method.MakeGenericMethod(typeof(T));
-                //    // Execute the generic fetch method for the specified type
-                //    if (Options.AsyncSynchronization)
-                //        Task.Run(() => genMethod.Invoke(this, new object[] { null }));
-                //    else
-                //        (genMethod.Invoke(this, new object[] { null }) as Task)?.Wait();
-                //}
             });
         }
 
@@ -228,7 +217,7 @@ namespace DBF
         /// <typeparam name="T">The model of the item corresponding to the table from the sql database</typeparam>
         /// <param name="predicate">An <see cref="Action"/> to set the where clause for the removal of the item/items from the sql database</param>
         /// <returns></returns>
-        public async Task Remove<T>(Action<T> predicate) where T : new()
+        public async Task Remove<T>(Action<T> predicate) where T : class, new()
         {
             await Task.Run(() =>
             {
@@ -290,18 +279,6 @@ namespace DBF
                     connection.Open();
                     command.ExecuteNonQuery();
                 }
-
-                // Synchronize the database
-                //if (Options.SynchronizeDB)
-                //{
-                //    var method = GetType().GetMethod("Fetch");
-                //    var genMethod = method.MakeGenericMethod(typeof(T));
-                //    // Execute the generic fetch method for the specified type
-                //    if (Options.AsyncSynchronization)
-                //        Task.Run(() => genMethod.Invoke(this, new object[] { null }));
-                //    else
-                //        (genMethod.Invoke(this, new object[] { null }) as Task)?.Wait();
-                //}
             });
         }
 
@@ -313,7 +290,7 @@ namespace DBF
         /// <param name="predicate">The <see cref="Action"/> defining the where clause for the update statement</param>
         /// <param name="update">The <see cref="Action"/> setting the new values for the item</param>
         /// <returns></returns>
-        public async Task Update<T>(Action<T> predicate) where T : new()
+        public async Task Update<T>(Action<T> predicate) where T : class, new()
         {
             await Task.Run(() =>
             {
@@ -404,18 +381,6 @@ namespace DBF
                     connection.Open();
                     command.ExecuteNonQuery();
                 }
-
-                // Synchronize the database
-                //if (Options.SynchronizeDB)
-                //{
-                //    var method = GetType().GetMethod("Fetch");
-                //    var genMethod = method.MakeGenericMethod(typeof(T));
-                //    // Execute the generic fetch method for the specified type
-                //    if (Options.AsyncSynchronization)
-                //        Task.Run(() => genMethod.Invoke(this, new object[] { null }));
-                //    else
-                //        (genMethod.Invoke(this, new object[] { null }) as Task)?.Wait();
-                //}
             });
         }
 
