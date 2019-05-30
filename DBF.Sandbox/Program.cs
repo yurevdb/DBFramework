@@ -29,7 +29,7 @@ namespace DBF.SandBox
 
                 context.Users.Add(user);
 
-                //await context.Commit();
+                await context.Commit();
             }
         }
     }
