@@ -3,9 +3,12 @@ using System.Collections.Generic;
 
 namespace DBF
 {
+    /// <summary>
+    /// Holds the schema for the database
+    /// </summary>
     public class DBSchema
     {
-        #region Internal Properties
+        #region Public Properties
 
         /// <summary>
         /// The tables for the <see cref="DBContext"/>

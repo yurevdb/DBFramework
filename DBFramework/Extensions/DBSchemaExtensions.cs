@@ -8,7 +8,7 @@ namespace DBF
     /// <summary>
     /// Object to hold all the extension functions for the <see cref="PropertyInfo"/> needed in <see cref="DBF"/>
     /// </summary>
-    public static class PropertyInfoExtensions
+    public static class DBSchemaExtensions
     {
         #region Primary Key Extensions
 
@@ -19,7 +19,7 @@ namespace DBF
         /// <param name="Schema">The Schema to use</param>
         /// <param name="type">The model for wich we're running the action</param>
         /// <returns></returns>
-        public static bool IsPrimaryKey(this PropertyInfo propertyInfo, DBSchema Schema, Type model)
+        public static bool IsPrimaryKey(this DBSchema Schema, PropertyInfo propertyInfo, Type model)
         {
             var output = Schema.GetType().GetMethod("Model").MakeGenericMethod(model).Invoke(Schema, null);
             if ((PropertyInfo)output.GetType().GetProperty("PrimaryKey").GetValue(output) == propertyInfo)
@@ -29,15 +29,30 @@ namespace DBF
         }
 
         /// <summary>
+        /// Get the primary key of a given <see cref="Type"/>
+        /// </summary>
+        /// <param name="model"></param>
+        /// <param name="schema"></param>
+        /// <returns></returns>
+        public static PropertyInfo GetPrimaryKey(this DBSchema schema, Type model)
+        {
+            // Get the DBTable containing the constraints for the dbcontext
+            var table = schema.GetType().GetMethod("Model").MakeGenericMethod(model).Invoke(schema, null);
+
+            // Return the type of the primary key
+            return (PropertyInfo)table.GetType().GetProperty("PrimaryKey").GetValue(table);
+        }
+
+        /// <summary>
         /// Gets wether the value of the primary key of the given object is set based on a schema
         /// </summary>
         /// <param name="obj">The object to check</param>
         /// <param name="Schema">The schema to check against</param>
         /// <returns></returns>
-        public static bool HasPrimaryKeyValue(this object obj, DBSchema Schema)
+        public static bool HasPrimaryKeyValue(this DBSchema Schema, object obj)
         {
             foreach (var prop in obj.GetType().GetProperties())
-                if (prop.IsPrimaryKey(Schema, obj.GetType()))
+                if (Schema.IsPrimaryKey(prop, obj.GetType()))
                     if (prop.GetValue(obj) != null)
                         return true;
 
@@ -50,10 +65,10 @@ namespace DBF
         /// <param name="obj">The object to get the property value of the primary key from</param>
         /// <param name="Schema">The schema to check the primary key against</param>
         /// <returns><see cref="null"/> if the given object's primary key is the value of <see cref="null"/></returns>
-        public static object GetPrimaryKeyValue(this object obj, DBSchema Schema)
+        public static object GetPrimaryKeyValue(this DBSchema Schema, object obj)
         {
             foreach (var prop in obj.GetType().GetProperties())
-                if (prop.IsPrimaryKey(Schema, obj.GetType()))
+                if (Schema.IsPrimaryKey(prop, obj.GetType()))
                     return prop.GetValue(obj);
 
             // Should never be reached
@@ -64,7 +79,13 @@ namespace DBF
 
         #region Is Required Extensions
 
-        public static bool RequiredValuesCorrect(this object obj, DBSchema Schema)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Schema"></param>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public static bool RequiredValuesCorrect(this DBSchema Schema, object obj)
         {
             bool retval = true;
 

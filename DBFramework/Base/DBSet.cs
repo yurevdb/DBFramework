@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace DBF
 {
@@ -109,15 +108,8 @@ namespace DBF
         public bool Contains(TModel item, DBSchema schema)
         {
             foreach (var i in _list)
-            {
-                var a = i.GetPrimaryKeyValue(schema);
-                var b = item.GetPrimaryKeyValue(schema);
-
-                if (a.Equals(b))
-                {
+                if (schema.GetPrimaryKeyValue(i).Equals(schema.GetPrimaryKeyValue(item)))
                     return true;
-                }
-            }
 
             return false;
         }

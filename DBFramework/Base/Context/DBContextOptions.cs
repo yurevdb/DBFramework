@@ -51,9 +51,14 @@ namespace DBF
         #region Public Objects Properties
 
         /// <summary>
+        /// The <see cref="DBF.DBActionProvider"/> that implements the database actions
+        /// </summary>
+        internal DBActionProvider DBActionProvider { get; private set; }
+
+        /// <summary>
         /// 
         /// </summary>
-        internal IDBActionProvider DBActionProvider { get; private set; }
+        internal DBSchema DBSchema { private get; set; }
 
         #endregion
 
@@ -91,9 +96,10 @@ namespace DBF
         /// </summary>
         /// <typeparam name="TActionProvider"></typeparam>
         /// <param name="actionProvider"></param>
-        public void Use<TActionProvider>() where TActionProvider : IDBActionProvider, new()
+        public void Use<TActionProvider>() where TActionProvider : DBActionProvider, new()
         {
             TActionProvider provider = (TActionProvider)Activator.CreateInstance(typeof(TActionProvider), _ConnectionString);
+            provider.Schema = DBSchema;
             DBActionProvider = provider;
         }
 

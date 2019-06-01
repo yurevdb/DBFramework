@@ -1,7 +1,7 @@
 ﻿namespace DBF
 {
     /// <summary>
-    /// Information about a change that can instruct the <see cref="DBContext"/> to call the <see cref="IDBActionProvider"/> with the stored <see cref="DBAction"/>
+    /// Information about a change that can instruct the <see cref="DBContext"/> to call the <see cref="DBActionProvider"/> with the stored <see cref="DBAction"/>
     /// </summary>
     internal class DBChange
     {

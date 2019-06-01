@@ -18,7 +18,7 @@ namespace DBF
     /// </summary>
     public abstract class DBContext : IDisposable
     {
-        #region Private Members
+        #region Internal Members
 
         /// <summary>
         /// The context builder instance
@@ -28,7 +28,7 @@ namespace DBF
         /// <summary>
         /// The user set DBActionProvider
         /// </summary>
-        internal IDBActionProvider DBActionProvider => Options.DBActionProvider;
+        internal DBActionProvider DBActionProvider => Options.DBActionProvider;
 
         #endregion
 
@@ -54,6 +54,9 @@ namespace DBF
         /// </summary>
         public DBContext()
         {
+            // Set the schema
+            Options.DBSchema = Schema;
+
             // Create the context
             OnContextCreating(_DBContextBuilder);
 
@@ -68,7 +71,7 @@ namespace DBF
         public DBContext(string ConnectionString)
         {
             // Set the DBContextOptions
-            Options = new DBContextOptions(ConnectionString);
+            Options = new DBContextOptions(ConnectionString) { DBSchema = Schema };
 
             // Create the context
             OnContextCreating(_DBContextBuilder);
@@ -101,16 +104,8 @@ namespace DBF
                     // Get the DBChange
                     var change = ChangeTracker.Instance.Changes.Dequeue();
 
-                    switch (change.Action)
-                    {
-                        case DBAction.Push:
-                            break;
-                        case DBAction.Remove:
-                            break;
-                        case DBAction.Update:
-                            break;
-                        default: continue;
-                    }
+                    // Run the action provided by the DBChange from the changetracker
+                    DBActionProvider.RunAction(change.Action, change.Value, Schema);
                 }
             });
         }

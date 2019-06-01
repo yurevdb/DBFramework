@@ -161,23 +161,120 @@ namespace DBF
                     }
                 }
 
+                // If one or both sets contain no elements, then an update can't have occured
+                if (localSet.Count == 0 || remoteSet.Count == 0) yield break;
+
                 // There might be an update to an item
                 // Iterate over every item in the remote set and if the local set item is different
                 // Add it as a DBChange
                 for (int i = 0; i < remoteSet.Count; i++)
                 {
-                    var remoteItem = remoteSet[i];
-                    var localItem = localSet[i];
+                    // Check for deletions
+                    if (i >= localSet.Count) continue;
 
-                    if (remoteItem != localItem)
+                    // Get the items from the database and local context to compare for updates
+                    object remoteItem = remoteSet[i];
+                    object localItem = localSet[i];
+
+                    // Check equality of the items
+                    if (!DBEquals(remoteItem, localItem))
                     {
-                        yield return new DBChange { Action = DBAction.Update, Value = localItem };
+                        // Yield the newly created item with the updates
+                        yield return new DBChange { Action = DBAction.Update, Value = DBCreateUpdateItem(remoteItem, localItem, context.Schema) };
                     }
                 }
             }
 
             // Stop the function
             yield break;
+        }
+
+        /// <summary>
+        /// Creates a new instance of an object to reflect the changes between the remote and local items.
+        /// This item includes the changes plus the primary key value (unchanged).
+        /// </summary>
+        /// <param name="item1">The <see cref="object"/> representing the remote item</param>
+        /// <param name="item2">The <see cref="object"/> representing the local item</param>
+        /// <returns></returns>
+        private object DBCreateUpdateItem(object item1, object item2, DBSchema schema)
+        {
+            // Get the type of model
+            Type modelType = item1.GetType();
+
+            // Create a new instance of the model
+            var updatedItem = Activator.CreateInstance(modelType);
+
+            // Test the property values
+            foreach (var prop in modelType.GetProperties())
+                if(schema.GetPrimaryKey(modelType) == prop)
+                    prop.SetValue(updatedItem, prop.GetValue(item2));
+            else
+                switch (prop.PropertyType.ToString())
+                {
+                    case "System.Guid":
+                    case "System.Nullable`1[System.Guid]":
+                        if (Guid.Parse(prop.GetValue(item1).ToString()).CompareTo(Guid.Parse(prop.GetValue(item2).ToString())) != 0)
+                            prop.SetValue(updatedItem, prop.GetValue(item2) ?? prop.PropertyType.GetDefault());
+                        break;
+                    case "System.Boolean":
+                    case "System.Nullable`1[System.Boolean]":
+                        if ((prop.GetValue(item1) as bool?).GetValueOrDefault() != (prop.GetValue(item2) as bool?).GetValueOrDefault())
+                            prop.SetValue(updatedItem, prop.GetValue(item2) ?? prop.PropertyType.GetDefault());
+                        break;
+                    case "System.DateTimeOffset":
+                    case "System.Nullable`1[System.DateTimeOffset]":
+                        if (DateTimeOffset.Compare((DateTimeOffset)prop.GetValue(item1), (DateTimeOffset)prop.GetValue(item2)) != 0)
+                            prop.SetValue(updatedItem, prop.GetValue(item2) ?? prop.PropertyType.GetDefault());
+                        break;
+                    default:
+                        if (prop.GetValue(item1) != prop.GetValue(item2))
+                            prop.SetValue(updatedItem, prop.GetValue(item2) ?? prop.PropertyType.GetDefault());
+                        break;
+                }
+
+            // Return the updated item
+            return updatedItem;
+        }
+
+        /// <summary>
+        /// Test if both objects are equal in values
+        /// </summary>
+        /// <param name="item1">First <see cref="object"/> to test</param>
+        /// <param name="item2">Second <see cref="object"/> to test</param>
+        /// <returns></returns>
+        private bool DBEquals(object item1, object item2)
+        {
+            // Test the types
+            if (item1.GetType() != item2.GetType())
+                return false;
+
+            // Test the property values
+            foreach (var prop in item1.GetType().GetProperties())
+                switch (prop.PropertyType.ToString())
+                {
+                    case "System.Guid":
+                    case "System.Nullable`1[System.Guid]":
+                        if (Guid.Parse(prop.GetValue(item1).ToString()).CompareTo(Guid.Parse(prop.GetValue(item2).ToString())) != 0)
+                            return false;
+                        break;
+                    case "System.Boolean":
+                    case "System.Nullable`1[System.Boolean]":
+                        if ((prop.GetValue(item1) as bool?).GetValueOrDefault() != (prop.GetValue(item2) as bool?).GetValueOrDefault())
+                            return false;
+                        break;
+                    case "System.DateTimeOffset":
+                    case "System.Nullable`1[System.DateTimeOffset]":
+                        if (DateTimeOffset.Compare((DateTimeOffset)prop.GetValue(item1), (DateTimeOffset)prop.GetValue(item2)) != 0)
+                            return false;
+                        break;
+                    default:
+                        if (prop.GetValue(item1) != prop.GetValue(item2))
+                            return false;
+                        break;
+                }
+
+            // All test passed, so the object equal eachother
+            return true;
         }
 
         #endregion

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace DBF.SandBox
 {
@@ -7,30 +8,52 @@ namespace DBF.SandBox
         static void Main()
         {
             Tests();
-
-            Console.ReadKey();
         }
 
         private static async void Tests()
         {
             using (var context = new TestContext())
             {
-                var user = new User
-                {
-                    Id = Guid.NewGuid(),
-                    FirstName = "Samantha",
-                    LastName = "Rone",
-                    UserName = "Cute Blonde",
-                    IsEnabled = true,
-                    CreatedDateUTC = DateTimeOffset.UtcNow
-                };
+                //context.Users.Remove(context.Users.Where(u => u.Id == Guid.Parse("656FA219-E0CA-4117-A99F-C80C56BD44D5")).First());
+                //context.Users.Remove(context.Users.Where(u => u.Id == Guid.Parse("C4870235-9DBF-4112-BF03-130C1A30A1B8")).First());
+                //context.Users.Remove(context.Users.Where(u => u.Id == Guid.Parse("7792DE0E-DC89-4BC6-BE93-5FC58EE14168")).First());
 
-                context.Users[0].UserName = "Ik ben veranderd";
+                //context.Users.Add(new User
+                //{
+                //    Id = Guid.NewGuid(),
+                //    FirstName = "Test",
+                //    IsEnabled = true,
+                //    CreatedDateUTC = DateTimeOffset.UtcNow
+                //});
+                //context.Users.Add(new User
+                //{
+                //    Id = Guid.NewGuid(),
+                //    IsEnabled = true,
+                //    CreatedDateUTC = DateTimeOffset.UtcNow
+                //});
+                //context.Users.Add(new User
+                //{
+                //    Id = Guid.NewGuid(),
+                //    FirstName = "Test 3",
+                //    LastName = "Bibi Jones",
+                //    UserName = "Britney Beth",
 
-                context.Users.Add(user);
+                //    IsEnabled = true,
+                //    CreatedDateUTC = DateTimeOffset.UtcNow
+                //});
+
+                //context.Users.Where(u => u.Id == Guid.Parse("656FA219-E0CA-4117-A99F-C80C56BD44D5")).First().FirstName = "Test 2";
+                //context.Users.Where(u => u.Id == Guid.Parse("656FA219-E0CA-4117-A99F-C80C56BD44D5")).First().LastName = "Failed";
+                //context.Users.Where(u => u.Id == Guid.Parse("656FA219-E0CA-4117-A99F-C80C56BD44D5")).First().UserName = "Magic";
+
+                //context.Users.Where(u => u.Id == Guid.Parse("C4870235-9DBF-4112-BF03-130C1A30A1B8")).First().IsEnabled = false;
+
+                //context.Users.Where(u => u.Id == Guid.Parse("7792DE0E-DC89-4BC6-BE93-5FC58EE14168")).First().FirstName = null;
 
                 await context.Commit();
             }
+
+            Console.WriteLine("Done");
         }
     }
 
@@ -75,6 +98,7 @@ namespace DBF.SandBox
             // Set constraints
             contextBuilder.Model<User>().HasKey(m => m.Id);
             contextBuilder.Model<User>().IsRequired(m => m.IsEnabled);
+            contextBuilder.Model<User>().IsRequired(m => m.CreatedDateUTC);
         }
 
         #endregion
