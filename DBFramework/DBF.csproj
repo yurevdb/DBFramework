@@ -12,10 +12,4 @@
     <PackageReference Include="System.Data.SqlClient" Version="4.6.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="Vy">
-      <HintPath>..\..\..\Framework\Vy\Vy\bin\Release\netstandard2.0\Vy.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
 </Project>
