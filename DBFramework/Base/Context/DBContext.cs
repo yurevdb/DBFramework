@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Vy;
 
 namespace DBF
 {
@@ -62,6 +63,10 @@ namespace DBF
 
             // Take a snapshot of the context
             ChangeTracker.Instance.TakeSnapShot(this);
+
+            // Check if the actionprovider is set
+            // if the action provider isn't set, throw an exception
+            if (Options.DBActionProvider == null) throw new DBActionProviderException("The action provider is not set");
         }
 
         /// <summary>
@@ -78,6 +83,10 @@ namespace DBF
 
             // Take a snapshot of the context
             ChangeTracker.Instance.TakeSnapShot(this);
+
+            // Check if the actionprovider is set
+            // if the action provider isn't set, throw an exception
+            if (Options.DBActionProvider == null) throw new DBActionProviderException("The action provider is not set");
         }
 
         #endregion
@@ -120,21 +129,41 @@ namespace DBF
         /// <param name="contextBuilder">The <see cref="DBContextBuilder"/> instance to use to set constraints etc.</param>
         public virtual void OnContextCreating(DBContextBuilder contextBuilder)
         {
-            // Get the database data
-            if (Options.AsyncSynchronization)
+            try
             {
-                _ = GetDatabaseData();
+                // Get the database data
+                if (Options.AsyncSynchronization)
+                    _ = GetDatabaseData();
+                else
+                    GetDatabaseData().Wait();
             }
-            else
-                GetDatabaseData().Wait();
+            catch (Exception ex)
+            {
+                throw new DBAccessException("Could not get the data from the database", ex);
+            }
 
             // Set the DBTables in the contextbuilder based on the DBSets set in the user created context
             foreach (var prop in GetType().GetProperties())
                 if (prop.PropertyType.GenericTypeArguments.Length == 1)
                 {
-                    // Assuming the user did this right
-                    var type = typeof(DBTable<>).MakeGenericType(prop.PropertyType.GenericTypeArguments.First());
-                    var table = Activator.CreateInstance(type);
+                    // The DBTable for the corresponding DBSet
+                    object table;
+
+                    try
+                    {
+                        // Assuming the user did this right
+                        var type = typeof(DBTable<>).MakeGenericType(prop.PropertyType.GenericTypeArguments.First());
+                        table = Activator.CreateInstance(type);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception($"The DBTable for {prop.Name} was not successfully created.", ex);
+                    }
+
+                    // if the dbtable was not created, throw an exception
+                    if (table == null) throw new Exception($"The DBTable for {prop.Name} was not successfully created.");
+
+                    // Add a DBTable based on the DBSet that was created in the DBContext by the user
                     contextBuilder.Schema.DBTables.Add(table);
                 }
         }
@@ -190,7 +219,14 @@ namespace DBF
         /// <summary>
         /// Disposes the current <see cref="DBContext"/>
         /// </summary>
-        public void Dispose() { }
+        public void Dispose()
+        {
+            // Clear any changes that might have been made
+            ChangeTracker.Instance.Changes.Clear();
+
+            // Clear the snapshot that was taken by the DBContext
+            ChangeTracker.Instance.SnapShot.Clear();
+        }
 
         #endregion
     }

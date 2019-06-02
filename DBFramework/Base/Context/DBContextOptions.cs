@@ -19,12 +19,6 @@ namespace DBF
         #region Public Settings Properties
 
         /// <summary>
-        /// Determines wether the <see cref="DBContext"/> should be synchronized at all times with the database.
-        /// I.e. after each push, remove or update run the fetch action to the database and set the <see cref="DBSet{T}"/> to its current values.
-        /// </summary>
-        public bool SynchronizeDB { get; set; } = true;
-
-        /// <summary>
         /// <para>
         ///     When set to true will allow potentially unsafe ways of handling data with a database according to the framework.
         ///     I.e. mutating a primary key of a database entry would be considered unsafe because the primary key is seen as immutable by the framework.
@@ -56,7 +50,7 @@ namespace DBF
         internal DBActionProvider DBActionProvider { get; private set; }
 
         /// <summary>
-        /// 
+        /// The schema for the <see cref="DBContext"/>
         /// </summary>
         internal DBSchema DBSchema { private get; set; }
 
@@ -76,7 +70,7 @@ namespace DBF
         }
 
         /// <summary>
-        /// Default constructor
+        /// Default constructor with connectionstring to be able to initialize the <see cref="DBF.DBActionProvider"/>
         /// <para>
         ///     Initializes the <see cref="DBContextOptions"/> with the most used options set to the correst values.
         ///     If the options have to be set differently per <see cref="DBContext"/>, the user has all the possibility to do so.
@@ -92,15 +86,36 @@ namespace DBF
         #region Public Functions
 
         /// <summary>
-        /// 
+        /// Sets the <see cref="DBF.DBActionProvider"/> for the <see cref="DBContext"/>.
         /// </summary>
-        /// <typeparam name="TActionProvider"></typeparam>
-        /// <param name="actionProvider"></param>
+        /// <typeparam name="TActionProvider">The implementation of the <see cref="DBF.DBActionProvider"/> to use for the <see cref="DBContext"/></typeparam>
         public void Use<TActionProvider>() where TActionProvider : DBActionProvider, new()
         {
-            TActionProvider provider = (TActionProvider)Activator.CreateInstance(typeof(TActionProvider), _ConnectionString);
-            provider.Schema = DBSchema;
-            DBActionProvider = provider;
+            // Generate the provider
+            TActionProvider provider;
+
+            // Try to create the given DBActionProvider
+            try
+            {
+                provider = (TActionProvider)Activator.CreateInstance(typeof(TActionProvider), _ConnectionString);
+            }
+            catch (Exception ex)
+            {
+                throw new DBActionProviderException("The DBActionProvider could not be instantiated", ex);
+            }
+
+            // If the DBActionProvider was succesfully created...
+            if(provider != null)
+            {
+                // Store the provider locally
+                DBActionProvider = provider;
+
+                if (DBSchema != null)
+                    // Assign the DBSchema
+                    provider.Schema = DBSchema;
+                else
+                    throw new DBActionProviderException("There was no database schema created in the action provider");
+            }
         }
 
         #endregion

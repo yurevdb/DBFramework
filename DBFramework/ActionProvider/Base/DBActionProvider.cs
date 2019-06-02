@@ -15,6 +15,15 @@ namespace DBF
     /// </summary>
     public abstract class DBActionProvider
     {
+        #region Protected Members
+
+        /// <summary>
+        /// The connectionstring to access the database 
+        /// </summary>
+        protected readonly string _ConnectionString = null;
+
+        #endregion
+
         #region Internal Properties
 
         /// <summary>
@@ -22,6 +31,24 @@ namespace DBF
         /// I.e. Constraints, Primary key, etc.
         /// </summary>
         internal DBSchema Schema { get; set; }
+
+        #endregion
+
+        #region Constructor
+
+        /// <summary>
+        /// Default Constructor
+        /// </summary>
+        public DBActionProvider() { }
+
+        /// <summary>
+        /// Paramerized constructor
+        /// <paramref name="ConnectionString">The Connectionstring to access the database</paramref>
+        /// </summary>
+        public DBActionProvider(string ConnectionString)
+        {
+            _ConnectionString = ConnectionString;
+        }
 
         #endregion
 

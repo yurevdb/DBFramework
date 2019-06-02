@@ -14,41 +14,32 @@ namespace DBF.SandBox
         {
             using (var context = new TestContext())
             {
-                //context.Users.Remove(context.Users.Where(u => u.Id == Guid.Parse("656FA219-E0CA-4117-A99F-C80C56BD44D5")).First());
-                //context.Users.Remove(context.Users.Where(u => u.Id == Guid.Parse("C4870235-9DBF-4112-BF03-130C1A30A1B8")).First());
-                //context.Users.Remove(context.Users.Where(u => u.Id == Guid.Parse("7792DE0E-DC89-4BC6-BE93-5FC58EE14168")).First());
+                var id = Guid.NewGuid();
 
-                //context.Users.Add(new User
-                //{
-                //    Id = Guid.NewGuid(),
-                //    FirstName = "Test",
-                //    IsEnabled = true,
-                //    CreatedDateUTC = DateTimeOffset.UtcNow
-                //});
-                //context.Users.Add(new User
-                //{
-                //    Id = Guid.NewGuid(),
-                //    IsEnabled = true,
-                //    CreatedDateUTC = DateTimeOffset.UtcNow
-                //});
-                //context.Users.Add(new User
-                //{
-                //    Id = Guid.NewGuid(),
-                //    FirstName = "Test 3",
-                //    LastName = "Bibi Jones",
-                //    UserName = "Britney Beth",
+                context.Users.Add(new User
+                {
+                    Id = id,
+                    FirstName = "Yuré",
+                    LastName = "Vanderbruggen",
+                    IsEnabled = true,
+                    CreatedDateUTC = DateTimeOffset.UtcNow
+                });
 
-                //    IsEnabled = true,
-                //    CreatedDateUTC = DateTimeOffset.UtcNow
-                //});
+                await context.Commit();
 
-                //context.Users.Where(u => u.Id == Guid.Parse("656FA219-E0CA-4117-A99F-C80C56BD44D5")).First().FirstName = "Test 2";
-                //context.Users.Where(u => u.Id == Guid.Parse("656FA219-E0CA-4117-A99F-C80C56BD44D5")).First().LastName = "Failed";
-                //context.Users.Where(u => u.Id == Guid.Parse("656FA219-E0CA-4117-A99F-C80C56BD44D5")).First().UserName = "Magic";
+                var u1 = from user in context.Users
+                        where user.Id == id
+                        select user;
 
-                //context.Users.Where(u => u.Id == Guid.Parse("C4870235-9DBF-4112-BF03-130C1A30A1B8")).First().IsEnabled = false;
+                u1.FirstOrDefault().UserName = "Yurevdb";
 
-                //context.Users.Where(u => u.Id == Guid.Parse("7792DE0E-DC89-4BC6-BE93-5FC58EE14168")).First().FirstName = null;
+                await context.Commit();
+
+                var u2 = from user in context.Users
+                        where user.Id == id
+                        select user;
+
+                context.Users.Remove(u2.FirstOrDefault());
 
                 await context.Commit();
             }
