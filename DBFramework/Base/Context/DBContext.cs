@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace DBF
@@ -187,26 +188,62 @@ namespace DBF
                     if (prop.PropertyType.GetGenericArguments().Length < 1) continue;
 
                     // Get the generic type (always should be just 1)
-                    Type genericType = prop.PropertyType.GetGenericArguments().First();
+                    Type genericType = prop.PropertyType.GetGenericArguments().FirstOrDefault();
 
                     // Check to see if the property was of type DBSet<genericType>
                     if (!(prop.PropertyType == typeof(DBSet<>).MakeGenericType(genericType))) continue;
 
-                    // Get the fetch method
-                    var method = DBActionProvider.GetType().GetMethod(nameof(DBActionProvider.Fetch));
+                    MethodInfo genMethod;
 
-                    // Generate the fetch method with the generic type we got earlier
-                    var genMethod = method.MakeGenericMethod(genericType);
+                    try
+                    {
+                        // Get the fetch method
+                        var method = DBActionProvider.GetType().GetMethod(nameof(DBActionProvider.Fetch));
 
-                    // Execute the generic fetch method for the specified type
-                    var p = typeof(Task<>).MakeGenericType(typeof(DBSet<>).MakeGenericType(prop.PropertyType.GetGenericArguments().First()));
-                    var t = Convert.ChangeType(genMethod.Invoke(DBActionProvider, new object[] { null }), p);
+                        // Generate the fetch method with the generic type we got earlier
+                        genMethod = method.MakeGenericMethod(genericType);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new DBAccessException("Could not instantiate the Fetch method", ex);
+                    }
 
-                    // Get the database values
-                    var value = t.GetType().GetProperty("Result")?.GetValue(t);
+                    // create a task to execute the method
+                    object t = null;
 
-                    // Set the remote values to the ordinary list of the dbset
-                    prop.SetValue(this, value);
+                    try
+                    {
+                        // Execute the generic fetch method for the specified type
+                        var p = typeof(Task<>).MakeGenericType(typeof(DBSet<>).MakeGenericType(prop.PropertyType.GetGenericArguments().First()));
+                        t = Convert.ChangeType(genMethod.Invoke(DBActionProvider, new object[] { null }), p);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new DBAccessException("Could not generate the task to execute the Fetch method", ex);
+                    }
+
+                    // The value
+                    object value;
+
+                    try
+                    {
+                        // Get the database values
+                        value = t.GetType().GetProperty("Result")?.GetValue(t);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new DBAccessException("The result from the Fetch method could not be retrieved", ex);
+                    }
+
+                    try
+                    {
+                        // Set the remote values to the ordinary list of the dbset
+                        prop.SetValue(this, value);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new DBAccessException($"Could not set the {prop.Name} to the result from the Fetch function", ex);
+                    }
                 }
             });
         }
