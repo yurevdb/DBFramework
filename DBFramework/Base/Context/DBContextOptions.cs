@@ -52,7 +52,7 @@ namespace DBF
         /// <summary>
         /// The schema for the <see cref="DBContext"/>
         /// </summary>
-        internal DBSchema DBSchema { private get; set; }
+        public DBSchema DBSchema { get; set; }
 
         #endregion
 
@@ -89,23 +89,37 @@ namespace DBF
         /// Sets the <see cref="DBF.DBActionProvider"/> for the <see cref="DBContext"/>.
         /// </summary>
         /// <typeparam name="TActionProvider">The implementation of the <see cref="DBF.DBActionProvider"/> to use for the <see cref="DBContext"/></typeparam>
-        public void Use<TActionProvider>() where TActionProvider : DBActionProvider, new()
+        public void Use<TActionProvider>(bool IsSingleton = false) where TActionProvider : DBActionProvider, new()
         {
             // Generate the provider
-            TActionProvider provider;
+            TActionProvider provider = null;
+            TActionProvider provvy;
 
             // Try to create the given DBActionProvider
             try
             {
-                provider = (TActionProvider)Activator.CreateInstance(typeof(TActionProvider), _ConnectionString);
+                // If the connectionstring is set, create the provider with the connection string else
+                // Create the provider without a parameter in the constructor
+                if (_ConnectionString != null && typeof(TActionProvider).GetConstructor(new Type[] { typeof(string) }) != null) //&& typeof(TActionProvider).GetConstructors().Length > 1 
+                    provvy = (TActionProvider)Activator.CreateInstance(typeof(TActionProvider), _ConnectionString);
+                else
+                    provvy = (TActionProvider)Activator.CreateInstance(typeof(TActionProvider));
             }
             catch (Exception ex)
             {
                 throw new DBActionProviderException("The DBActionProvider could not be instantiated", ex);
             }
 
+            // If singleton is true, get a property in the Action Provider that is of it's own type (signifies a singleton instance)
+            if (IsSingleton)
+                foreach (var prop in typeof(TActionProvider).GetProperties())
+                    if (prop.PropertyType == typeof(TActionProvider))
+                        provider = (TActionProvider)prop.GetValue(provvy);
+            else
+                provider = provvy;
+
             // If the DBActionProvider was succesfully created...
-            if(provider != null)
+            if (provider != null)
             {
                 // Store the provider locally
                 DBActionProvider = provider;

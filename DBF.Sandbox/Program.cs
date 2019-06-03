@@ -8,43 +8,63 @@ namespace DBF.SandBox
         static void Main()
         {
             Tests();
+
+            Console.ReadKey();
         }
 
         private static async void Tests()
         {
-            using (var context = new TestContext())
-            {
-                var id = Guid.NewGuid();
+            //using (var context = new TestContext())
+            //{
+            //    var id = Guid.NewGuid();
 
+            //    context.Users.Add(new User
+            //    {
+            //        Id = id,
+            //        FirstName = "Yuré",
+            //        LastName = "Vanderbruggen",
+            //        IsEnabled = true,
+            //        CreatedDateUTC = DateTimeOffset.UtcNow
+            //    });
+
+            //    await context.Commit();
+
+            //    var u1 = from user in context.Users
+            //            where user.Id == id
+            //            select user;
+
+            //    u1.FirstOrDefault().UserName = "Yurevdb";
+
+            //    await context.Commit();
+
+            //    var u2 = from user in context.Users
+            //            where user.Id == id
+            //            select user;
+
+            //    context.Users.Remove(u2.FirstOrDefault());
+
+            //    await context.Commit();
+            //}
+
+            using(var context = new TestContext())
+            {
                 context.Users.Add(new User
                 {
-                    Id = id,
+                    Id = Guid.NewGuid(),
                     FirstName = "Yuré",
                     LastName = "Vanderbruggen",
+                    UserName = "Yurevdb",
                     IsEnabled = true,
                     CreatedDateUTC = DateTimeOffset.UtcNow
                 });
 
                 await context.Commit();
-
-                var u1 = from user in context.Users
-                        where user.Id == id
-                        select user;
-
-                u1.FirstOrDefault().UserName = "Yurevdb";
-
-                await context.Commit();
-
-                var u2 = from user in context.Users
-                        where user.Id == id
-                        select user;
-
-                context.Users.Remove(u2.FirstOrDefault());
-
-                await context.Commit();
             }
 
-            Console.WriteLine("Done");
+            using(var context = new TestContext())
+            {
+
+            }
         }
     }
 
@@ -81,7 +101,7 @@ namespace DBF.SandBox
         public override void OnContextCreating(DBContextBuilder contextBuilder)
         {
             // Set the options
-            Options.Use<SqlDBActionProvider>();
+            Options.Use<MockDBActionProvider>(true);
 
             // Call base function
             base.OnContextCreating(contextBuilder);
