@@ -5,6 +5,14 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>DBF</AssemblyName>
     <RootNamespace>DBF</RootNamespace>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Yuré Vanderbruggen</Authors>
+    <Description>A database framework like Entity Framework made for educational purposes</Description>
+    <PackageProjectUrl>https://github.com/yurevdb/DBFramework</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/yurevdb/DBFramework</RepositoryUrl>
+    <RepositoryType>Git</RepositoryType>
+    <PackageTags>Database Framework</PackageTags>
+    <PackageReleaseNotes>Initial Release</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
