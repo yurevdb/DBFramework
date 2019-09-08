@@ -8,7 +8,7 @@ namespace DBF
     /// <summary>
     /// 
     /// </summary>
-    public class MockDBActionProvider : DBActionProvider
+    public class MockActionProvider : DBActionProvider
     {
         #region Private Members
 
@@ -20,7 +20,7 @@ namespace DBF
         /// <summary>
         /// 
         /// </summary>
-        private static readonly MockDBActionProvider _Instance = new MockDBActionProvider();
+        private static readonly MockActionProvider _Instance = new MockActionProvider();
 
         #endregion
 
@@ -29,13 +29,13 @@ namespace DBF
         /// <summary>
         /// Singleton instance
         /// </summary>
-        public MockDBActionProvider Instance => _Instance;
+        public MockActionProvider Instance => _Instance;
 
         #endregion
 
         #region Constructor
 
-        public MockDBActionProvider() : base() { }
+        public MockActionProvider() : base() { }
 
         #endregion
 

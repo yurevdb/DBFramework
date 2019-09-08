@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DBF", "DBFramework\DBF.cspr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBF.Sandbox", "DBF.Sandbox\DBF.Sandbox.csproj", "{3492EE1E-F58A-4639-A38C-5BD515715B69}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DBF.Sql", "DBF.SqlActionProvider\DBF.Sql.csproj", "{6DEA8A04-32B4-49DA-81D0-27FE1DA3B43C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{3492EE1E-F58A-4639-A38C-5BD515715B69}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3492EE1E-F58A-4639-A38C-5BD515715B69}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3492EE1E-F58A-4639-A38C-5BD515715B69}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6DEA8A04-32B4-49DA-81D0-27FE1DA3B43C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6DEA8A04-32B4-49DA-81D0-27FE1DA3B43C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6DEA8A04-32B4-49DA-81D0-27FE1DA3B43C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6DEA8A04-32B4-49DA-81D0-27FE1DA3B43C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

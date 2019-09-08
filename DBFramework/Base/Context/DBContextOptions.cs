@@ -112,9 +112,11 @@ namespace DBF
 
             // If singleton is true, get a property in the Action Provider that is of it's own type (signifies a singleton instance)
             if (IsSingleton)
+            {
                 foreach (var prop in typeof(TActionProvider).GetProperties())
                     if (prop.PropertyType == typeof(TActionProvider))
                         provider = (TActionProvider)prop.GetValue(provvy);
+            }
             else
                 provider = provvy;
 

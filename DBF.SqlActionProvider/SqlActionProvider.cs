@@ -10,20 +10,20 @@ namespace DBF
     /// <summary>
     /// Implementation for the interaction logic between the <see cref="DBContext"/> and a Sql Server Database Engine
     /// </summary>
-    public class SqlDBActionProvider : DBActionProvider
+    public class SqlActionProvider : DBActionProvider
     {
         #region Constructor
 
         /// <summary>
         /// Default Constructor
         /// </summary>
-        public SqlDBActionProvider() : base() { }
+        public SqlActionProvider() : base() { }
 
         /// <summary>
         /// Paramerized constructor
         /// <paramref name="ConnectionString">The Connectionstring to access the database</paramref>
         /// </summary>
-        public SqlDBActionProvider(string ConnectionString) : base(ConnectionString) { }
+        public SqlActionProvider(string ConnectionString) : base(ConnectionString) { }
 
         #endregion
 

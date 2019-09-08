@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 
 namespace DBF.SandBox
 {
@@ -14,56 +13,28 @@ namespace DBF.SandBox
 
         private static async void Tests()
         {
-            //using (var context = new TestContext())
-            //{
-            //    var id = Guid.NewGuid();
-
-            //    context.Users.Add(new User
-            //    {
-            //        Id = id,
-            //        FirstName = "Yuré",
-            //        LastName = "Vanderbruggen",
-            //        IsEnabled = true,
-            //        CreatedDateUTC = DateTimeOffset.UtcNow
-            //    });
-
-            //    await context.Commit();
-
-            //    var u1 = from user in context.Users
-            //            where user.Id == id
-            //            select user;
-
-            //    u1.FirstOrDefault().UserName = "Yurevdb";
-
-            //    await context.Commit();
-
-            //    var u2 = from user in context.Users
-            //            where user.Id == id
-            //            select user;
-
-            //    context.Users.Remove(u2.FirstOrDefault());
-
-            //    await context.Commit();
-            //}
-
             using(var context = new TestContext())
             {
-                context.Users.Add(new User
+                var users = context.Users;
+
+                var newUser = new User
                 {
                     Id = Guid.NewGuid(),
-                    FirstName = "Yuré",
-                    LastName = "Vanderbruggen",
-                    UserName = "Yurevdb",
+                    FirstName = "Bibi",
+                    LastName = "Jones",
                     IsEnabled = true,
-                    CreatedDateUTC = DateTimeOffset.UtcNow
-                });
+                    CreatedDateUTC = DateTimeOffset.UtcNow,
+                    UserName = "BJ"
+                };
+
+                context.Users.Add(newUser);
 
                 await context.Commit();
             }
 
             using(var context = new TestContext())
             {
-
+                _ = context.Users;
             }
         }
     }
@@ -101,7 +72,7 @@ namespace DBF.SandBox
         public override void OnContextCreating(DBContextBuilder contextBuilder)
         {
             // Set the options
-            Options.Use<MockDBActionProvider>(true);
+            Options.Use<SqlActionProvider>();
 
             // Call base function
             base.OnContextCreating(contextBuilder);

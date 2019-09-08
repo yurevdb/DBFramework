@@ -30,7 +30,7 @@ namespace DBF
         /// The <see cref="DBSchema"/> holding all the info about every property for the <see cref="DBContext"/>.
         /// I.e. Constraints, Primary key, etc.
         /// </summary>
-        internal DBSchema Schema { get; set; }
+        internal protected DBSchema Schema { get; set; }
 
         #endregion
 
