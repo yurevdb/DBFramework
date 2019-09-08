@@ -61,7 +61,7 @@ namespace DBF
         /// <param name="action"></param>
         /// <param name="item"></param>
         /// <param name="schema"></param>
-        internal void RunAction<TModel>(DBAction action, TModel item, DBSchema schema) where TModel : class, new()
+        internal async Task RunAction<TModel>(DBAction action, TModel item, DBSchema schema) where TModel : class, new()
         {
             // Get primary key property info
             var pk = schema.GetPrimaryKey(item.GetType());
@@ -69,13 +69,14 @@ namespace DBF
             switch (action)
             {
                 case DBAction.Push:
-                    Push(item);
+                    await Push(item);
                     break;
                 case DBAction.Remove:
                     var rmethod = GetType().GetMethod(nameof(Remove));
                     var rgenMethod = rmethod.MakeGenericMethod(item.GetType());
                     Action<TModel> rwhere = i => pk.SetValue(i, pk.GetValue(item));
-                    rgenMethod.Invoke(this, new object[] { rwhere });
+                    var t1 = (Task)rgenMethod.Invoke(this, new object[] { rwhere });
+                    await t1;
                     break;
                 case DBAction.Update:
                     var umethod = GetType().GetMethod(nameof(Update));
@@ -87,7 +88,8 @@ namespace DBF
                             if (prop.GetValue(item) != null && prop != pk)
                                 prop.SetValue(i, prop.GetValue(item));
                     };
-                    ugenMethod.Invoke(this, new object[] { uwhere });
+                    var t2 = (Task)ugenMethod.Invoke(this, new object[] { uwhere });
+                    await t2;
                     break;
                 default: break;
             }

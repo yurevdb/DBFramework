@@ -102,7 +102,7 @@ namespace DBF
         /// <returns></returns>
         public async Task Commit()
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
                 // Check if any changes have happened
                 if (!ChangeTracker.Instance.DetectChanges(this)) return;
@@ -114,7 +114,7 @@ namespace DBF
                     var change = ChangeTracker.Instance.Changes.Dequeue();
 
                     // Run the action provided by the DBChange from the changetracker
-                    DBActionProvider.RunAction(change.Action, change.Value, Schema);
+                    await DBActionProvider.RunAction(change.Action, change.Value, Schema);
                 }
             });
         }

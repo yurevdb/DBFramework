@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace DBF.SandBox
 {
@@ -11,31 +13,24 @@ namespace DBF.SandBox
             Console.ReadKey();
         }
 
-        private static async void Tests()
+        private static void Tests()
         {
-            using(var context = new TestContext())
+            Task.Run(async () =>
             {
-                var users = context.Users;
-
-                var newUser = new User
+                using (var context = new TestContext())
                 {
-                    Id = Guid.NewGuid(),
-                    FirstName = "Bibi",
-                    LastName = "Jones",
-                    IsEnabled = true,
-                    CreatedDateUTC = DateTimeOffset.UtcNow,
-                    UserName = "BJ"
-                };
+                    var users = context.Users;
 
-                context.Users.Add(newUser);
+                    context.Users.Where((u) => u.FirstName == "Bibi").First().IsEnabled = true;
 
-                await context.Commit();
-            }
+                    await context.Commit();
+                }
 
-            using(var context = new TestContext())
-            {
-                _ = context.Users;
-            }
+                using (var context = new TestContext())
+                {
+                    _ = context.Users;
+                }
+            });
         }
     }
 
