@@ -135,5 +135,11 @@ namespace DBF
         public abstract Task Update<TModel>(Action<TModel> predicate) where TModel : class, new();
 
         #endregion
+
+        #region Abstract Database Modifications
+
+
+
+        #endregion
     }
 }
